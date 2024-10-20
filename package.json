@@ -1,0 +1,18 @@
+{
+  "name": "@bedok/front-wrapper",
+  "version": "0.0.7",
+  "exports": {
+    ".": {
+      "import": "./lib/BedokWrapper/index.ts",
+      "types": "./index.d.ts.txt"
+    },
+    "./lib/BedokWrapper/BedokWrapper.vue": {
+      "import": "./lib/BedokWrapper/BedokWrapper.vue"
+    }
+  },
+  "peerDependencies": {
+    "@bedok/front": "*",
+    "axios": "*",
+    "vue": "^3"
+  }
+}

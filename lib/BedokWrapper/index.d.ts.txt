@@ -1,0 +1,31 @@
+
+/**
+ * Allows customizing existing types of the router that are used globally like `$router`, `<RouterLink>`, and `beforeRouteLeave()`. **ONLY FOR INTERNAL USAGE**.
+ *
+ * @internal
+ */
+export declare interface TypesConfig {
+}
+
+export { }
+
+declare module '@vue/runtime-core' {
+  export interface ComponentCustomOptions {
+    /**
+     * Desc.
+     */
+    // beforeRouteLeave?: TypesConfig extends Record<'beforeRouteLeave', infer T> ? T : NavigationGuard
+  }
+
+  export interface ComponentCustomProperties {
+    /**
+     * Normalized current location. See {@link RouteLocationNormalizedLoaded}.
+     */
+    // $route: TypesConfig extends Record<'$route', infer T> ? T : {}
+    $routerBedokWrapper: TypesConfig extends Record<'$routerBedokWrapper', infer T> ? T : {}
+  }
+
+export interface GlobalComponents {
+    // RouterView: TypesConfig extends Record<'RouterView', infer T> ? T : typeof RouterView
+  }
+}
