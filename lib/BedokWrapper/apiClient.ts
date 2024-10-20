@@ -1,4 +1,6 @@
-let axios, baseUrl, apiVer, headers;
+let axios, baseUrl = '', apiVer, headers;
+// export default {}
+
 export default {
   setAxios(instance) {axios = instance},
   setBaseUrl(value) {baseUrl = value},
@@ -63,5 +65,6 @@ export default {
       }
     },
   },
-  }
 }
+/*
+*/

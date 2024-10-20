@@ -20,3 +20,9 @@ volta run --node=18.17.1 --yarn=1.22.19 yarn link
 # cd to the project
 volta run --node=18.17.1 --yarn=1.22.19 yarn link @bedok/front-wrapper
 ```
+
+or package.json's dependencies
+
+```
+  "@bedok/front-wrapper": "link:./../bedok_wrapper",
+```

@@ -2,6 +2,8 @@ import BedokWrapper from './BedokWrapper.vue'
 import Vue from 'vue'
 // import type Vue from 'vue'
 
+export { default as apiClient } from './apiClient'
+
 export const BedokWrapperPlugin = {
   install(app) {
     app.component('BedokWrapper', BedokWrapper);

@@ -4,6 +4,9 @@
   "exports": {
     ".": {
       "import": "./lib/BedokWrapper/index.ts",
+
+      "node": "./lib/BedokWrapper/index.ts",
+      "require": "./lib/BedokWrapper/index.ts",
       "types": "./index.d.ts.txt"
     },
     "./lib/BedokWrapper/BedokWrapper.vue": {

@@ -111,6 +111,7 @@ const { ref, onMounted, onUnmounted, defineProps, defineEmits, watch, unref, pro
 import axios from 'axios';
 import { computed } from 'vue';
 import apiClient from './apiClient'
+// const apiClient = {}
 
 const initPageVal = (location.hash.includes(',') ? location.hash.substring(1).split(',') : (location.hash.substring(1) || 1)) as number | number & {length: number} | any[] | string | [{id: number}, any]
 
