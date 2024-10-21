@@ -5,11 +5,35 @@
       <slot name="login" v-if="($slots.login) && (page == 9 || page == 'login')" v-bind="{ onRoute, token, apiClient, onLogin, onRegister, form }"/>
       <slot name="register" v-if="($slots.register) && (page == 'register')" v-bind="{ onRoute, token, apiClient, onLogin, onRegister, form }"/>
       <slot name="logout" v-if="($slots.logout) && (page == 10 || page == 'logout')" v-bind="{ onRoute, token, apiClient, onLogout, form }"/>
-      <section v-if="(typeof page !== 'number' ? page?.length >= 2 : false) && page[0] == 'details'  ||  ((() => {const ret = page[0] == 'order'; if(0) debugger; return ret})())">
-        <slot name="details" v-bind="{ad: findAdById(page[1]?.id || page[1]), adId: page[1]?.id ?? page[1], onRoute, form: formReserv, onReserve, editAd, doShare}">
+      <section v-if="(typeof page !== 'number' ? page?.length >= 2 : false) && page[0] == 'details'">
+        <slot name="details" v-bind="{
+          ad: findAdById(page[1]?.id || page[1]),
+          adId: page[1]?.id ?? page[1],
+          onRoute,
+          form: formReserv,
+          onReserve,
+          editAd,
+          doShare
+        }">
           <h2>Szczegóły ogłoszenia</h2>
           <pre>{{JSON.stringify(page[1], null, 2)}}</pre>
           <button @click="onRoute('adslist')">powrót</button>
+        </slot>
+      </section>
+      <section v-else-if="page[0] == 'order'">
+        <slot name="order" v-bind="{
+          adId: page[1],
+          adDetails,
+          ad,
+          apiClient,
+          onRoute,
+          goToPayment,
+        }">
+          making the order {{ page[1] }}
+          <br>
+          <button @click="() => {debugger; apiClient.payment.create({amount: 1000})}">buy</button>
+          <br>
+          <button @click="() => onRoute(['details', page[1]])">back to the ad details</button>
         </slot>
       </section>
       <section v-else-if="page == 1 || page == 'mainpage'">
@@ -61,7 +85,7 @@
       <slot v-else-if="page === 'profile' || page == 7" name="profile" v-bind="{ onRoute, apiClient, token, myAds, myData, updateAd, tempAds, editAd, ad, window, triggerReload: () => onRoute(page), openAdDetails}">
         no #profile template provided
       </slot>
-      <slot v-else-if="page === 'adedit' || page == 17 || page[0] === 'adedit'" name="adedit" v-bind="{ onRoute, apiClient, myAds, myData, updateAd, token, tempAds, editAd, ad, editAdId, triggerReload: () => onRoute(page) }">
+      <slot v-else-if="page === 'adedit' || page == 17 || page[0] === 'adedit'" name="adedit" v-bind="{ onRoute, apiClient, myAds, myData, updateAd, token, tempAds, editAd, ad, adId: page[1], editAdId, triggerReload: () => onRoute(page) }">
         no #adedit template provided
       </slot>
       <section v-else-if="page == 2 || page == 'adslist' || page?.[0] === 'adslist'">
@@ -73,7 +97,6 @@
           newModel,
           removeAd,
           isLoading,
-          openAdDetails1: ad => page = ['details', ad],
           openAdDetails,
           openAdsByHost: hostId => onRoute(['adslist', 'unpack', hostId]),
           onRoute,
@@ -117,6 +140,7 @@ const initPageVal = (location.hash.includes(',') ? location.hash.substring(1).sp
 
 const page_internal = ref(initPageVal);
 
+if (!'wont be used as outside setup()')
 watch(page_internal, (page, prevPage) => {
   console.info('watch:page', page)
 }, {
@@ -131,6 +155,8 @@ const ads = ref([] as {data: any}[])
 const first30Ads = ref([] as {data: any}[])
 const myData = ref({})
 const myAds = ref([])
+const ad = ref({title: 'no ad data'})
+const adDetails = ref({title: 'no ad data'})
 
 let apiVer = 1
 
@@ -169,10 +195,20 @@ const headers = computed(() => {
   }
 })
 
-async function onRoute(pageDef: typeof page_internal.value) {
+let appInstance;
+
+async function onRoute(pageDef: typeof page_internal.value, postHandler) {
   console.info('onRoute', pageDef)
+  if (typeof pageDef == 'number') {
+    console.warn('onRoute(number) nie jest zalecany, użyj mainpage, adslist, login, details, adedit, adcreate, profile, order')
+  }
+  let ret = false
   const isMainPage = pageDef == 1 || pageDef == 'mainpage';
   const isAdsList = pageDef == 2 || pageDef == 'adslist';
+  // debugger
+  if (localStorage.token) {
+    notifications.value = await apiClient.notifications.findAll()
+  }
   if (isMainPage || isAdsList) {
     apiClient.ads.findAll().then(adsList => {
       ads.value = adsList
@@ -181,24 +217,82 @@ async function onRoute(pageDef: typeof page_internal.value) {
   };
   if (pageDef[0] == 'adslist') {
     ads.value = []
-    apiClient.ads.findFiltered(pageDef[1]).then(r => {
+    apiClient.ads.findFiltered(pageDef[1]).then(filteredAdsList => {
+      ads.value = filteredAdsList
     })
   }
+  if (pageDef[0] == 'details') {
+    // debugger
+    // adId.value = pageDef[0];
+    adDetails.value = {'title': 'from onRoute'}
+    ad.value = adDetails.value
+    if (postHandler) {
+      const routeParams = {
+        id: pageDef[1],
+      }
+      postHandler(routeParams);
+      // if (appContext.globalProperties.$route) {
+      //   appContext.globalProperties.$route.params = {
+      //     id: pageDef[1],
+      //   }
+      // }
+    }
+    ret = true; // prevent resetting query
+  }
+  if (pageDef[0] == 'adedit') {
+    // updateAd, ad, editAdId, onRoute
+    ad.value = {title: 'Ad from onRoute adedit'}
+    ad.value = await apiClient.ads.findOne(pageDef[1])
+    // debugger
+  }
+  if (pageDef[0] == 'order') {
+    const q = appInstance.config.globalProperties.$route.query
+    if (!(q.guestsCount && q.from && q.to && q.id)) {
+      console.warn('missing route params')
+    }
+    // debugger
+    adDetails.value = {'title': 'from onRoute'}
+    ad.value = adDetails.value
+    // const qp = appContext.config.globalProperties.$route.queryParams
+    // if (!qp) {
+    //   console.warn('zeby wykonac rezerwację, trzeba wejść z linku mającego odpoiednie parametry')
+    // }
+    ret = true; // has to force-stop, as we rely on $route.query for compat
+  }
   if (pageDef == 7 || pageDef == 'profile') {
-    myData.value = await apiClient.profile.findSingle()
+    const resp = await apiClient.profile.findSingle()
+    const mineads = await apiClient.profile.findMyAds()
+    // debugger
+    myAds.value = mineads
+    myData.value = resp
+    // myData.value['myAds'] = myAds // WRONG: wont reactively update myData (its reference does not change)
+    // resp.myAds = myAds
+    // myData.value = {...myData.value}
+    // return true; // do not use vue-router's $route.push (force-stop)
+    ret = true // stores return values as we have ending actions
+  }
+  if (pageDef == 10) {
+    // page_internal.value = 'login'
+    pageDef = 'login'
+    // return;
   }
   page_internal.value = pageDef
   location.hash = (pageDef as any).push ? (pageDef as any[]).join(',') : (pageDef as string);
-  return true;
+  // return true;
+  return ret;
 }
 
-function openAdDetails(cb, ad, ...rest) {
+function openAdDetails(ad) {
+  // debugger
   if (!ad.id && ad.data?.advertisementId) {
     ad.id = ad.data.advertisementId
   }
+  // TODO loading ad details
   console.info('openingAdDetails', ad);
   const emitDetails = ['details', ad.id || ad.advertisementId];
-  cb(...emitDetails)
+  // cb(...emitDetails)
+  onRoute(emitDetails)
+  return Promise.resolve(ad)
 };
 
 export default {
@@ -208,20 +302,39 @@ export default {
   props: ['page0'],
   computed: {
   },
-  watch: {
-  },
+  // watch: {
+  // },
   setup(props, host) {
+    const inst = VueAll.getCurrentInstance();
+    let globalProperties = {};
+    if (inst) {
+      const { appContext } = inst
+      appInstance = appContext
+      // const globalProperties = appContext.config.globalProperties;
+      globalProperties = appInstance.config.globalProperties
+    }
+
     VueAll.onBeforeMount(() => {
       const instance = VueAll.getCurrentInstance()
       if (instance) {
         instance.appContext.config.globalProperties.onRoute = onRoute
       }
+      // fallback for updating $route.params.id
     })
     onMounted(async () => {
       if (page_internal.value !== 1) {
         host.emit('update:page', page_internal.value)
       }
     })
+    watch(() => page_internal.value, (page) => {
+      // debugger
+      if (page[0] == 'details') {
+        host.$route
+        globalProperties.$route.params = {
+          id: page[1],
+        }
+      }
+    }, {immediate: true})
     provide('onRoute', onRoute)
     let isPageAttrSyncing = false
     const { emit, attrs } = host
@@ -238,13 +351,29 @@ export default {
     const page = computed(() => {
       return page_internal.value
     });
+    function onSearch(data) {
+      // debugger
+      if (globalProperties.$route.query.from) {
+        // setting from
+      }
+      globalProperties.$route.query = {
+        from: '2024-10-20',
+        to: '2024-10-21',
+        guestsCount: 1,
+        // id: '',
+      }
+    }
+    function editAd(adId, ad, ...rest) {
+      // debugger
+      onRoute(['adedit', adId])
+    }
     return {
       page_internal,
       page,
       window,
       ...data,
       token,
-      apiClient: 0,
+      apiClient,
       form: 0,
       ads,
       isLoading: 0,
@@ -256,20 +385,23 @@ export default {
       isRouterView: 0,
       findAdById(...args: any[]) {},
       formReserv: 0,
-      editAd: 0,
+      editAd,
       doShare: 0,
       first30Ads,
-      openAdDetails(ad, ...args) {
-        console.info('openAdDetails component method call')
-        const self = this as any
-        return openAdDetails((...arr) => emit('update:page', arr), ad, ...args)
-      },
+      openAdDetails,
+      // openAdDetailsWrapper(ad, ...args) {
+      //   console.info('openAdDetails component method call')
+      //   const self = this as any
+      //   return openAdDetails((...arr) => emit('update:page', arr), ad, ...args)
+      // },
       posts: 0,
       removeAd: 0,
       createAd(...args) {},
       openAdsByHost: hostId => onRoute(['ads', 'unpack', hostId]),
-      ad: 0,
+      goToPayment: 'use apiClient, go to goToPayment',
+      ad,
       editAdId: 0,
+      adDetails: {},
       myAds,
       myData,
       updateAd: 0,
@@ -279,9 +411,10 @@ export default {
       onRegister: 0,
       onReserve: 0,
       onLogout,
-      onSearch: 0,
+      onSearch,
       onRoute,
       routeFromRouter: {component: null},
+      orderData: {},
     }
   },
 }

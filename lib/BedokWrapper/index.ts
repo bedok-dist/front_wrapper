@@ -2,6 +2,8 @@ import BedokWrapper from './BedokWrapper.vue'
 import Vue from 'vue'
 // import type Vue from 'vue'
 
+import apiClient from './apiClient'
+
 export { default as apiClient } from './apiClient'
 
 export const BedokWrapperPlugin = {
@@ -17,6 +19,7 @@ export const BedokWrapperPlugin = {
     }
     const BedokObj = {
       baseUrl,
+      apiClient,
       distinctCities: ['Bełchatów', 'Łódź', 'Warszawa'],
       buildPayment(id, price) {
         return {
@@ -41,12 +44,52 @@ export const BedokWrapperPlugin = {
           ]
         };
       },
+      goToPayment(data = '$buildPayment()', ctx) {
+        const { $route } = ctx
+        // debugger
+        console.log('goToPayment')
+        // TODO append here somehow returnUrl
+        return apiClient.payment.create(data)
+          .then((r) => {
+            // TODO history.push
+            // debugger;
+            console.info('redirecting')
+            const url = r.data['redirectUri']
+            const doRedir = window.confirm(`Zostaniesz przeniesiony na ${url} celem płatności, czy chcesz tego (jeśli nie, to płatność NIE będzie już możliwa (nie przechowujemy linku w danych profilu))`)
+            if (doRedir) {
+              location.href = url;
+            }
+          })
+      },
       saveCities(ads) {
         let citiesList = ads.map(e => e.data.city || e.city);
         const cities = [...new Set([...citiesList])];
         this.distinctCities = cities
         console.info('found distrinct cities', cities)
         return cities;
+      },
+      async duplicateAd(adId) {
+        const ad = apiClient.ads.findOne(adId)
+        const adStr = window.prompt('new ad def', JSON.stringify(ad, null, 2))
+        // const newAd = JSON.parse(adStr)
+        // location.href = '/'
+        app.config.globalProperties.onRoute(['adedit', adId])
+      },
+      polyfillRouterQuery(params, {self} = {}) {
+        // debugger
+        console.info('vue-router parseUrl is reseting that', {query: app.config.globalProperties.$route.query})
+        app.config.globalProperties.$route.query = {
+          id: params.id,
+          from: '2024-10-20',
+          to: '2024-10-24',
+          guestsCount: 9
+        };
+        setTimeout(() => {
+          console.info('query2:', {query: app.config.globalProperties.$route.query})
+          setTimeout(() => {
+            console.info('query3:', {query: app.config.globalProperties.$route.query})
+          }, 1000)
+        }, 100)
       },
       registerNewsletter(emailValue, {axios} = {axios: null}) {
         let resp;
@@ -70,7 +113,10 @@ export const BedokWrapperPlugin = {
         const glob = app.config.globalProperties
         if (route.path == "/advertisements") {
           if (route.query) {
-            glob.onRoute(['adslist', route.query])
+            const isSkipRouterPush = glob.onRoute(['adslist', route.query])
+            if (isSkipRouterPush) {
+              return;
+            }
           }
         }
         console.info('useing h.orig', h.orig)
