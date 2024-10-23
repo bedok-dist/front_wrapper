@@ -148,7 +148,7 @@ export const BedokWrapperPlugin = {
     // we will just skip literally every route and just capture all calls to push
     app.config.globalProperties.$router.beforeEach((to, from) => {
       console.info('route:before', to, 'from=', from, 'will be skipped')
-      return false
+      // return false // nope, switching routes gets calleled, FIXME (skip only which do reset $route.params)
     })
     if (!h.orig) {
       h.orig = app.config.globalProperties.$router

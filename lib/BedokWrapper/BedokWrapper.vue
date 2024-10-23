@@ -10,14 +10,15 @@
           ad: findAdById(page[1]?.id || page[1]),
           adId: page[1]?.id ?? page[1],
           onRoute,
-          form: formReserv,
+          form0: formReserv,
+          form,
           onReserve,
           editAd,
           doShare
         }">
           <h2>Szczegóły ogłoszenia</h2>
           <fieldset v-if="form">
-            Kontekst danych <kdb>formReserv</kdb>
+            Kontekst danych <kdb>form</kdb>
             <pre>{{JSON.stringify(form, null, 2)}}</pre>
           </fieldset>
           <pre>{{JSON.stringify(page[1], null, 2)}}</pre>
