@@ -211,7 +211,9 @@ async function onRoute(pageDef: typeof page_internal.value, postHandler) {
   const isAdsList = pageDef == 2 || pageDef == 'adslist';
   // debugger
   if (localStorage.token) {
-    notifications.value = await apiClient.notifications.findAll()
+    apiClient.notifications.findAll().then(r => {
+        notifications.value = r
+    })
   }
   if (isMainPage || isAdsList) {
     apiClient.ads.findAll().then(adsList => {
