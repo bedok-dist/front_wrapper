@@ -6,6 +6,8 @@ import apiClient from './apiClient'
 
 export { default as apiClient } from './apiClient'
 
+const DEBUG = (window as any).DEBUG;
+
 export const BedokWrapperPlugin = {
   install(app) {
     app.component('BedokWrapper', BedokWrapper);
@@ -77,7 +79,7 @@ export const BedokWrapperPlugin = {
       },
       polyfillRouterQuery(params, {self} = {}) {
         // debugger
-        console.info('vue-router parseUrl is reseting that', {query: app.config.globalProperties.$route.query})
+        if (DEBUG) console.info('vue-router parseUrl is reseting that', {query: app.config.globalProperties.$route.query})
         app.config.globalProperties.$route.query = {
           id: params.id,
           from: '2024-10-20',
@@ -85,9 +87,9 @@ export const BedokWrapperPlugin = {
           guestsCount: 9
         };
         setTimeout(() => {
-          console.info('query2:', {query: app.config.globalProperties.$route.query})
+          if (DEBUG) console.info('query2:', {query: app.config.globalProperties.$route.query})
           setTimeout(() => {
-            console.info('query3:', {query: app.config.globalProperties.$route.query})
+            if (DEBUG) console.info('query3:', {query: app.config.globalProperties.$route.query})
           }, 1000)
         }, 100)
       },
@@ -109,17 +111,24 @@ export const BedokWrapperPlugin = {
     (h as any).orig = undefined;
     const pluginRouter = {
       push(route) {
-        console.info('$route.push', route)
+        if (DEBUG) console.info('$route.push', route)
         const glob = app.config.globalProperties
+        let isSkipRouterPush = false;
         if (route.path == "/advertisements") {
           if (route.query) {
-            const isSkipRouterPush = glob.onRoute(['adslist', route.query])
-            if (isSkipRouterPush) {
-              return;
-            }
+            isSkipRouterPush = glob.onRoute(['adslist', route.query])
           }
         }
-        console.info('useing h.orig', h.orig)
+        if (route.name == 'OrderSummaryView') {
+          console.warn('WARN: route.push for OrderSummaryView in SingleFullAd can be replaced with emit(make-booking)')
+          if (route.query) {
+            isSkipRouterPush = glob.onRoute(['order', route.params.id])
+          }
+        }
+        if (isSkipRouterPush) {
+          return;
+        }
+        if (DEBUG) console.info('useing h.orig', h.orig)
         return (h?.orig as any)?.push(route as any)
       },
     }
@@ -129,7 +138,7 @@ export const BedokWrapperPlugin = {
     if (app.config.globalProperties.$router) {
       app.config.globalProperties.$routerOrig = app.config.globalProperties.$router
       app.config.globalProperties.$router = pluginRouter
-      console.warn('There is already a global $router property (that is  good)');
+      if (DEBUG) console.warn('There is already a global $router property (that is  good)');
     } else {
       app.config.globalProperties.$router = pluginRouter
     }

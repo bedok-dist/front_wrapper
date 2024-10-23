@@ -140,13 +140,15 @@ import { computed } from 'vue';
 import apiClient from './apiClient'
 // const apiClient = {}
 
+const DEBUG = (window as any).DEBUG;
+
 const initPageVal = (location.hash.includes(',') ? location.hash.substring(1).split(',') : (location.hash.substring(1) || 1)) as number | number & {length: number} | any[] | string | [{id: number}, any]
 
 const page_internal = ref(initPageVal);
 
 if (!'wont be used as outside setup()')
 watch(page_internal, (page, prevPage) => {
-  console.info('watch:page', page)
+  if (DEBUG) console.info('watch:page', page)
 }, {
   immediate: true
 })
@@ -180,7 +182,7 @@ async function onLogin(form) {
   const loginResp = await axios.post(`${baseUrl}/host/login`, form)
   // const tokenValue = 'abc'
   // debugger
-  console.info('logging in')
+  if (DEBUG) console.info('logging in')
   const tokenValue = loginResp.data.token
   token.value = tokenValue;
   // localStorage.setItem('token', unref(token) ?? '')
@@ -202,7 +204,7 @@ const headers = computed(() => {
 let appInstance;
 
 async function onRoute(pageDef: typeof page_internal.value, postHandler) {
-  console.info('onRoute', pageDef)
+  if (DEBUG) console.info('onRoute', pageDef)
   if (typeof pageDef == 'number') {
     console.warn('onRoute(number) nie jest zalecany, użyj mainpage, adslist, login, details, adedit, adcreate, profile, order')
   }
@@ -294,7 +296,7 @@ function openAdDetails(ad) {
     ad.id = ad.data.advertisementId
   }
   // TODO loading ad details
-  console.info('openingAdDetails', ad);
+  if (DEBUG) console.info('openingAdDetails', ad);
   const emitDetails = ['details', ad.id || ad.advertisementId];
   // cb(...emitDetails)
   onRoute(emitDetails)
@@ -344,12 +346,12 @@ export default {
     provide('onRoute', onRoute)
     let isPageAttrSyncing = false
     const { emit, attrs } = host
-    console.log('onmounted')
+    if (DEBUG) console.log('onmounted')
     watch(() => host.attrs.page, (page) => {
       if (page !== undefined && isPageAttrSyncing) {
-        console.log('watching attrs.page', page)
+        if (DEBUG) console.log('watching attrs.page', page)
         page_internal.value = page as any
-      } else console.info('ignored page.sync')
+      } else if (DEBUG) console.info('ignored page.sync')
     }, {immediate: true})
     onMounted(() => {
       isPageAttrSyncing = true
@@ -396,7 +398,7 @@ export default {
       first30Ads,
       openAdDetails,
       // openAdDetailsWrapper(ad, ...args) {
-      //   console.info('openAdDetails component method call')
+      //   if (DEBUG) console.info('openAdDetails component method call')
       //   const self = this as any
       //   return openAdDetails((...arr) => emit('update:page', arr), ad, ...args)
       // },
