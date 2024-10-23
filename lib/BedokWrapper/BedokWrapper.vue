@@ -31,7 +31,7 @@
         }">
           making the order {{ page[1] }}
           <br>
-          <button @click="() => {debugger; apiClient.payment.create({amount: 1000})}">buy</button>
+          <button @click="() => {if(0) debugger; apiClient.payment.create({amount: 1000})}">buy</button>
           <br>
           <button @click="() => onRoute(['details', page[1]])">back to the ad details</button>
         </slot>
@@ -211,7 +211,9 @@ async function onRoute(pageDef: typeof page_internal.value, postHandler) {
   const isAdsList = pageDef == 2 || pageDef == 'adslist';
   // debugger
   if (localStorage.token) {
-    notifications.value = await apiClient.notifications.findAll()
+    apiClient.notifications.findAll().then(r => {
+      notifications.value = r;
+    })
   }
   if (isMainPage || isAdsList) {
     apiClient.ads.findAll().then(adsList => {
