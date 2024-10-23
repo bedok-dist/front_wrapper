@@ -50,6 +50,7 @@ export const BedokWrapperPlugin = {
         const { $route } = ctx
         // debugger
         console.log('goToPayment')
+        window.alert('Inicjalizowanie płatności... poczekaj lub sprawdź devtools');
         // TODO append here somehow returnUrl
         return apiClient.payment.create(data)
           .then((r) => {
@@ -80,16 +81,19 @@ export const BedokWrapperPlugin = {
       polyfillRouterQuery(params, {self} = {}) {
         // debugger
         if (DEBUG) console.info('vue-router parseUrl is reseting that', {query: app.config.globalProperties.$route.query})
-        app.config.globalProperties.$route.query = {
+        const query11 = {
           id: params.id,
           from: '2024-10-20',
           to: '2024-10-24',
           guestsCount: 9
         };
+        app.config.globalProperties.$route.query = query11;
         setTimeout(() => {
-          if (DEBUG) console.info('query2:', {query: app.config.globalProperties.$route.query})
+          if (DEBUG,1) console.info('query2:', {query: app.config.globalProperties.$route.query})
+          app.config.globalProperties.$route.query = query11
           setTimeout(() => {
-            if (DEBUG) console.info('query3:', {query: app.config.globalProperties.$route.query})
+            app.config.globalProperties.$route.query = query11
+            if (DEBUG,1) console.info('query3:', {query: app.config.globalProperties.$route.query})
           }, 1000)
         }, 100)
       },
@@ -119,10 +123,18 @@ export const BedokWrapperPlugin = {
             isSkipRouterPush = glob.onRoute(['adslist', route.query])
           }
         }
+        if (route.name == "AdvertisementDetails") {
+          if (route.params) {
+            debugger
+            console.info('route.param.id', route.params.id, {params: route.params})
+            isSkipRouterPush = glob.onRoute(['details', route.params.id])
+            isSkipRouterPush = true
+          }
+        }
         if (route.name == 'OrderSummaryView') {
           console.warn('WARN: route.push for OrderSummaryView in SingleFullAd can be replaced with emit(make-booking)')
           if (route.query) {
-            isSkipRouterPush = glob.onRoute(['order', route.params.id])
+            isSkipRouterPush = glob.onRoute(['order', route.params?.id ?? route.query?.id])
           }
         }
         if (isSkipRouterPush) {
@@ -132,6 +144,12 @@ export const BedokWrapperPlugin = {
         return (h?.orig as any)?.push(route as any)
       },
     }
+
+    // we will just skip literally every route and just capture all calls to push
+    app.config.globalProperties.$router.beforeEach((to, from) => {
+      console.info('route:before', to, 'from=', from, 'will be skipped')
+      return false
+    })
     if (!h.orig) {
       h.orig = app.config.globalProperties.$router
     }

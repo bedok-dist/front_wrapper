@@ -16,6 +16,10 @@
           doShare
         }">
           <h2>Szczegóły ogłoszenia</h2>
+          <fieldset v-if="form">
+            Kontekst danych <kdb>formReserv</kdb>
+            <pre>{{JSON.stringify(form, null, 2)}}</pre>
+          </fieldset>
           <pre>{{JSON.stringify(page[1], null, 2)}}</pre>
           <button @click="onRoute('adslist')">powrót</button>
         </slot>
@@ -51,6 +55,14 @@
         }">
           <nav>start | menu | all</nav>
           <section>hero</section>
+          <section>
+            <pre>{{JSON.stringify(form)}}</pre>
+            location (city): <input type="search" v-model="form.location">
+            from: <input type="date" v-model="form.from">
+            to: <input type="date" v-model="form.to">
+            guests: <input type="number" v-model="form.guestsCount">
+            <button @click="() => {debugger; onSearch(form)}">search</button>
+          </section>
           <section>cecha1 | cecha2 | cecha3</section>
           <section>
             <ul>
@@ -134,11 +146,13 @@
 
 <script lang="ts">
 import * as VueAll from 'vue';
-const { ref, onMounted, onUnmounted, defineProps, defineEmits, watch, unref, provide } = VueAll
+const { ref, onBeforeMount, onMounted, onUnmounted, defineProps, defineEmits, watch, unref, provide } = VueAll
 import axios from 'axios';
 import { computed } from 'vue';
 import apiClient from './apiClient'
 // const apiClient = {}
+
+import { useRouter, useRoute } from 'vue-router'
 
 const DEBUG = (window as any).DEBUG;
 
@@ -203,6 +217,10 @@ const headers = computed(() => {
 
 let appInstance;
 
+/**
+ * WARNING: this is executed too late as initial page [order,uuid]
+ * already sets internally id set to null, FIXME
+ */
 async function onRoute(pageDef: typeof page_internal.value, postHandler) {
   if (DEBUG) console.info('onRoute', pageDef)
   if (typeof pageDef == 'number') {
@@ -285,7 +303,17 @@ async function onRoute(pageDef: typeof page_internal.value, postHandler) {
     // return;
   }
   page_internal.value = pageDef
+
+  const q1 = appInstance.config.globalProperties.$route
   location.hash = (pageDef as any).push ? (pageDef as any[]).join(',') : (pageDef as string);
+  const q2 = appInstance.config.globalProperties.$route
+  console.log('q1 q2', q1, q2)
+  if (q1 === q2) {
+    // debugger
+  }
+  if (JSON.stringify(q1) !== JSON.stringify(q2)) {
+    // debugger
+  }
   // return true;
   return ret;
 }
@@ -304,7 +332,28 @@ function openAdDetails(ad) {
 };
 
 export default {
-  mounted() {
+  created() {
+    // debugger
+    if (this.$route && page_internal.value?.push) {
+      try {
+        const [pageName, id] = page_internal.value
+        if (pageName === 'details' || pageName == 'order') {
+          debugger
+          // if (Object.keys(this.$route.params).some(e => !({id: 1, from: 1, to: 1, guestsCount: 1}[e]))) {
+          if (['id', 'from', 'to', 'guestsCount'].some(e => !Object.keys(this.$route.params)[e])) {
+            this.$route.params = {
+              id: id,
+              from: '2024-10-21',
+              to: '2024-10-28',
+              guestsCount: 1,
+            }
+          }
+          this.$route.query = this.$route.params;
+          console.log('$route.params', this.$route)
+        }
+      } catch (e) {
+      }
+    }
     onRoute(page_internal.value)
   },
   props: ['page0'],
@@ -333,6 +382,14 @@ export default {
       if (page_internal.value !== 1) {
         host.emit('update:page', page_internal.value)
       }
+    })
+    // const vrout = require('vue-router')
+    // const { useRouter, useRoute } = vrout
+    const router = useRouter()
+    const route = useRoute()
+    watch(() => route.params, (params, pparams) => {
+      // ENSUREME: this has to be executed before onRoute
+      debugger
     })
     watch(() => page_internal.value, (page) => {
       // debugger
@@ -368,8 +425,13 @@ export default {
         from: '2024-10-20',
         to: '2024-10-21',
         guestsCount: 1,
+        from: data.from,
+        to: data.to,
+        guestsCount: data.guestsCount,
         // id: '',
       }
+      console.warn('WARN: filtering not done yet');
+      return onRoute(['adslist', JSON.stringify(data)])
     }
     function editAd(adId, ad, ...rest) {
       // debugger
@@ -382,7 +444,7 @@ export default {
       ...data,
       token,
       apiClient,
-      form: 0,
+      form: {},
       ads,
       isLoading: 0,
       newModel: {
