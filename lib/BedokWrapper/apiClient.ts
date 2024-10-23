@@ -81,6 +81,20 @@ export default {
         return profile;
       }
     },
+    async update(data) {
+      // TODO data structure validation
+      if (!data['dateOfBirth']) {
+        // YYYY-MM-DD
+        return Promise.reject('missing dateOfBirth, e.g. "dateOfBirth": "1900-01-01"')
+        return;
+      }
+      const resp = await axios.put(`${baseUrl}/host`, data, {
+        headers: {
+          'Authorization': localStorage.token,
+        },
+      })
+      return resp;
+    },
     async findMyAds() {
       const resp = await axios(`${baseUrl}/advertisement/host?sort=createdAt:DESC`, {
         headers: {

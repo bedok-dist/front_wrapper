@@ -31,7 +31,7 @@
         }">
           making the order {{ page[1] }}
           <br>
-          <button @click="() => {debugger; apiClient.payment.create({amount: 1000})}">buy</button>
+          <button @click="() => {if(0) debugger; apiClient.payment.create({amount: 1000})}">buy</button>
           <br>
           <button @click="() => onRoute(['details', page[1]])">back to the ad details</button>
         </slot>
@@ -84,6 +84,10 @@
       </section>
       <slot v-else-if="page === 'profile' || page == 7" name="profile" v-bind="{ onRoute, apiClient, token, myAds, myData, updateAd, tempAds, editAd, ad, window, triggerReload: () => onRoute(page), openAdDetails}">
         no #profile template provided
+        <br>
+        <textarea
+          :value="(() => {if(0) debugger; const {myReservations, ...data} = myData; return JSON.stringify(data)})()"
+          @blur="ev => apiClient.profile.update(JSON.parse(ev.target.value))"></textarea>
       </slot>
       <slot v-else-if="page === 'adedit' || page == 17 || page[0] === 'adedit'" name="adedit" v-bind="{ onRoute, apiClient, myAds, myData, updateAd, token, tempAds, editAd, ad, adId: page[1], editAdId, triggerReload: () => onRoute(page) }">
         no #adedit template provided
@@ -207,7 +211,9 @@ async function onRoute(pageDef: typeof page_internal.value, postHandler) {
   const isAdsList = pageDef == 2 || pageDef == 'adslist';
   // debugger
   if (localStorage.token) {
-    notifications.value = await apiClient.notifications.findAll()
+    apiClient.notifications.findAll().then(r => {
+      notifications.value = r;
+    })
   }
   if (isMainPage || isAdsList) {
     apiClient.ads.findAll().then(adsList => {
